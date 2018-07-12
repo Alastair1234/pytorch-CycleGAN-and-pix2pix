@@ -3,6 +3,8 @@ from data.base_dataset import BaseDataset, get_transform
 from data.image_folder import make_dataset
 from PIL import Image
 import random
+import pydicom
+import torchvision.transforms as transforms
 
 
 class UnalignedDataset(BaseDataset):
@@ -33,11 +35,21 @@ class UnalignedDataset(BaseDataset):
             index_B = random.randint(0, self.B_size - 1)
         B_path = self.B_paths[index_B]
         # print('(A, B) = (%d, %d)' % (index_A, index_B))
-        A_img = Image.open(A_path).convert('RGB')
-        B_img = Image.open(B_path).convert('RGB')
+        A_img = Image.fromarray(pydicom.read_file(A_path).pixel_array)
+        B_img = Image.fromarray(pydicom.read_file(B_path).pixel_array)
 
-        A = self.transform(A_img)
-        B = self.transform(B_img)
+        A_tensor = self.transform(A_img)
+        B_tensor = self.transform(B_img)
+
+        A_tensor.type(torch.float)
+        B_tensor.type(torch.float)
+
+        normalisedA = transforms.Normalize([(A_tensor.max()+A_tensor.min())/2], [(A_tensor.max()-A_tensor.min())/2])
+        normalisedB = transforms.Normalize([(B_tensor.max()+B_tensor.min())/2], [(B_tensor.max()-B_tensor.min())/2])
+
+        A=normalisedA(A_tensor)
+        B=normalisedB(B_tensor)
+
         if self.opt.which_direction == 'BtoA':
             input_nc = self.opt.output_nc
             output_nc = self.opt.input_nc

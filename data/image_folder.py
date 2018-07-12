@@ -10,10 +10,11 @@ import torch.utils.data as data
 from PIL import Image
 import os
 import os.path
+import pydicom
 
 IMG_EXTENSIONS = [
     '.jpg', '.JPG', '.jpeg', '.JPEG',
-    '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP',
+    '.png', '.PNG', '.ppm', '.PPM', '.bmp', '.BMP', '.dcm',
 ]
 
 
@@ -35,7 +36,7 @@ def make_dataset(dir):
 
 
 def default_loader(path):
-    return Image.open(path).convert('RGB')
+    return Image.fromarray(pydicom.read_file(path).pixel_array)
 
 
 class ImageFolder(data.Dataset):
